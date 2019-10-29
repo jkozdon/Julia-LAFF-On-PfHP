@@ -34,7 +34,7 @@ function run(ns, nsamples = 2)
 
   ref = (min=zeros(length(ns)), avg = zeros(length(ns)))
   jip_pji = (min=zeros(length(ns)), avg = zeros(length(ns)))
-  jip = (min=zeros(length(ns)), avg = zeros(length(ns)))
+  pji = (min=zeros(length(ns)), avg = zeros(length(ns)))
 
   for (i, n) = enumerate(ns)
     @show i,n
@@ -48,11 +48,16 @@ function run(ns, nsamples = 2)
     ref.min[i] = minimum(bref.times)
     ref.avg[i] = sum(bref.times) / length(bref.times)
 
-    bjip = @benchmark mygemm_jip($C, $A, $B) samples=nsamples
-    jip.min[i] = minimum(bjip.times)
-    jip.avg[i] = sum(bjip.times) / length(bjip.times)
+    bpji = @benchmark mygemm_pji($C, $A, $B) samples=nsamples
+    pji.min[i] = minimum(bpji.times)
+    pji.avg[i] = sum(bpji.times) / length(bpji.times)
 
     bjip_pji = @benchmark mygemm_jip_pji($C, $A, $B) samples=nsamples
+    jip_pji.min[i] = minimum(bjip_pji.times)
+    jip_pji.avg[i] = sum(bjip_pji.times) / length(bjip_pji.times)
+
+    bjip_pji_100 = @benchmark mygemm_jip_pji($C, $A, $B,
+                                             100, 100, 100) samples=nsamples
     jip_pji.min[i] = minimum(bjip_pji.times)
     jip_pji.avg[i] = sum(bjip_pji.times) / length(bjip_pji.times)
   end
