@@ -1,3 +1,5 @@
+include("gemm.jl")
+
 using UnicodePlots
 function plot_data(ns, data)
   scaling = 1e-9 .* (2 * ns.^3)
