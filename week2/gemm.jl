@@ -136,28 +136,24 @@ function mygemm_p(k, C, A, B, ldc, lda, j, ::Val{MB}, ::Val{NB}) where {MB, NB}
     αv = vload(Vec{MB, T}, A + (p-1)*lda*sizeof(T))
 
     β = B[p, j + 0]
-    # c1 += β * αv
-    c1 = muladd(c1, β, αv)
+    c1 = muladd(β, αv, c1)
+
+    if NB > 1
+      β = B[p, j + 1]
+      c2 = muladd(β, αv, c2)
+    end
 
     if NB > 2
-      β = B[p, j + 1]
-      # c2 += β * αv
-      c2 = muladd(c2, β, αv)
+      β = B[p, j + 2]
+      c3 = muladd(β, αv, c3)
     end
 
     if NB > 3
-      β = B[p, j + 2]
-      # c3 += β * αv
-      c3 = muladd(c3, β, αv)
+      β = B[p, j + 3]
+      c4 = muladd(β, αv, c4)
     end
 
     if NB > 4
-      β = B[p, j + 3]
-      # c4 += β * αv
-      c4 = muladd(c4, β, αv)
-    end
-
-    if NB > 5
       error("NB too big")
     end
   end
