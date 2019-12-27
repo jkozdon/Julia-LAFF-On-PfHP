@@ -8,8 +8,10 @@ function plot_data(ns, data)
   minv = floatmax()
   maxv = floatmin()
   for (s, v) = pairs(data)
+    # if s != :ref
     minv = min(minv, minimum(scaling ./ v))
     maxv = max(maxv, maximum(scaling ./ v))
+  # end
   end
 
   plt = lineplot(ns, scaling ./ data.ref, xlim = (ns[1], ns[end]),
@@ -28,6 +30,7 @@ using BenchmarkTools
 
 function run(ns, nsamples = 10)
   ref = zeros(length(ns))
+  ji_reg = zeros(length(ns))
   ji = zeros(length(ns))
 
   for (i, n) = enumerate(ns)
@@ -48,7 +51,15 @@ function run(ns, nsamples = 10)
 
     C .= C1
     t = @elapsed for n = 1:nsamples
-      mygemm!(C, A, B, Val(8), Val(4))
+      mygemm_NRxMR!(C, m, A, m, B, k, Val(8), Val(4))
+    end
+    ji_reg[i] = t / nsamples
+    @show ji_reg[i], 2m^3/ji_reg[i]
+    @show extrema(C - C2)
+
+    C .= C1
+    t = @elapsed for n = 1:nsamples
+      mygemm!(C, A, B, Val(48), Val(256), Val(256), Val(8), Val(4))
     end
     ji[i] = t / nsamples
     @show ji[i], 2m^3/ji[i]
@@ -56,12 +67,13 @@ function run(ns, nsamples = 10)
   end
 
   data = (ref = ref,
+          ji_reg = ji_reg,
           ji = ji,
          )
 
   return data
 end
 
-ns = 48:48:1500
+ns = 48:48:1000
 data = run(ns)
 plt = plot_data(ns, data)

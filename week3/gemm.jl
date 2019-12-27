@@ -1,16 +1,40 @@
 using SIMD
 
-function mygemm!(C, A, B, ::Val{MR}, ::Val{NR}) where {NR, MR}
+function mygemm!(C, A, B,
+                 ::Val{MC}, ::Val{NC}, ::Val{KC},
+                 ::Val{MR}, ::Val{NR},
+                ) where {MC, NC, KC, MR, NR}
   (m, n) = size(C)
   (~, k) = size(A)
   @assert mod(m, MR) == 0
   @assert mod(n, NR) == 0
+  @inbounds begin
+    for J = 1:NC:n
+      J2 = min(n, J-1+NC)
+      for P = 1:KC:k
+        P2 = min(k, P-1+KC)
+        for I = 1:MC:m
+          I2 = min(n, I-1+MC)
+          mygemm_NRxMR!(view(C, I:I2, J:J2), m,
+                        view(A, I:I2, P:P2), m,
+                        view(B, P:P2, J:J2), k,
+                        Val(MR), Val(NR))
+        end
+      end
+    end
+  end
+end
+
+
+function mygemm_NRxMR!(C, ldc, A, lda, B, ldb, ::Val{MR}, ::Val{NR}) where {MR, NR}
+  (m, n) = size(C)
+  (~, k) = size(A)
   @inbounds for J = 1:NR:n
     for I = 1:MR:m
       @views k_mygemm(k,
-                      pointer(C, I + (J-1) * m), m,
-                      pointer(A, I), m,
-                      pointer(B, 1 + (J-1) * k), k,
+                      pointer(C, I + (J-1) * m), ldc,
+                      pointer(A, I), lda,
+                      pointer(B, 1 + (J-1) * k), ldb,
                       Val(MR), Val(NR))
     end
   end
